@@ -1,5 +1,7 @@
-// sample express app created with npx express-generator --no-view src
+// Lightweight app that starts with OTEL bootstrap
+require('./otel-bootstrap');
 
+// ...existing code...
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');

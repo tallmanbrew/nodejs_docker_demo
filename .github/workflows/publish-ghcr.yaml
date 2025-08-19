@@ -1,4 +1,4 @@
-name: Publish Docker image to GHCR
+name: Publish Docker images to GHCR
 
 on:
   push:
@@ -15,6 +15,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Read package version
+        id: pkg
+        run: |
+          echo "package_version=$(jq -r .version < src/package.json)" >> $GITHUB_OUTPUT
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -22,20 +27,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: docker_meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}/nodejs-docker-demo
-          tags: |
-            type=raw,value=latest
-            type=raw,value=main
-
-      - name: Build and push Docker Image
+      - name: Build & push regular image
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: Dockerfile
           push: true
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository }}/nodejs-docker-demo:latest
+            ghcr.io/${{ github.repository }}/nodejs-docker-demo:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/nodejs-docker-demo:${{ steps.pkg.outputs.package_version }}
+
+      - name: Build & push OTEL image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.otel
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository }}/nodejs-docker-demo-otel:latest
+            ghcr.io/${{ github.repository }}/nodejs-docker-demo-otel:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/nodejs-docker-demo-otel:${{ steps.pkg.outputs.package_version }}
 

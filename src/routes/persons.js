@@ -24,18 +24,20 @@ router.get("/:id", function(req, res) {
         });
 });
 
-router.put("/", function(req, res) {
-    db.Person.create({
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        id: req.body.id
-        })
-        .then( person => {
-            res.status(200).send(JSON.stringify(person));
-        })
-        .catch( err => {
-            res.status(500).send(JSON.stringify(err));
+// Create a new person (POST /persons)
+router.post('/', async function(req, res) {
+    if (!req.body || !req.body.firstName) {
+        return res.status(400).json({ error: 'firstName is required' });
+    }
+    try {
+        const person = await db.Person.create({
+            firstName: req.body.firstName,
+            lastName: req.body.lastName
         });
+        res.status(201).json(person);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 router.delete("/:id", function(req, res) {

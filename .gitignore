@@ -103,5 +103,7 @@ dist
 # TernJS port file
 .tern-port
 
+# ignore stray -H file (created by terminal copy/paste or tooling)
+-H
 
 node_modules/
