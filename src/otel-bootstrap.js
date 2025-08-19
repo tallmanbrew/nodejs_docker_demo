@@ -10,7 +10,15 @@ const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http')
 const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
 const { ExpressInstrumentation } = require('@opentelemetry/instrumentation-express');
 const { PgInstrumentation } = require('@opentelemetry/instrumentation-pg');
-const { SequelizeInstrumentation } = require('@opentelemetry/instrumentation-sequelize');
+let SequelizeInstrumentation = null;
+try {
+  // Some versions export the class as a named export, others as default
+  const mod = require('@opentelemetry/instrumentation-sequelize');
+  SequelizeInstrumentation = mod.SequelizeInstrumentation || mod.default || mod;
+} catch (err) {
+  // not installed; that's fine — we'll skip it
+  console.warn('Sequelize instrumentation not installed, skipping SequelizeInstrumentation');
+}
 
 // Resolve OTLP HTTP traces endpoint (preference: explicit traces endpoint -> generic endpoint -> undefined)
 const tracesEndpoint = process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
@@ -55,7 +63,7 @@ const sdk = new NodeSDK({
       // you can add request/response hooks here to control span attributes/names
     }),
     new PgInstrumentation(),
-    new SequelizeInstrumentation()
+    ...(SequelizeInstrumentation ? [new SequelizeInstrumentation()] : [])
   ]
 });
 
