@@ -1,11 +1,16 @@
-// OTEL bootstrap - starts the OpenTelemetry Node SDK
+// OTEL bootstrap - explicit instrumentation setup
 // This file should be required before the application code to enable instrumentation
 
 const { NodeSDK } = require('@opentelemetry/sdk-node');
-const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
-const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
 const { Resource } = require('@opentelemetry/resources');
 const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+
+// explicit instrumentations
+const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
+const { ExpressInstrumentation } = require('@opentelemetry/instrumentation-express');
+const { PgInstrumentation } = require('@opentelemetry/instrumentation-pg');
+const { SequelizeInstrumentation } = require('@opentelemetry/instrumentation-sequelize');
 
 // Resolve OTLP HTTP traces endpoint (preference: explicit traces endpoint -> generic endpoint -> undefined)
 const tracesEndpoint = process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
@@ -41,14 +46,21 @@ const traceExporter = new OTLPTraceExporter({
 
 const sdk = new NodeSDK({
   traceExporter,
-  instrumentations: [getNodeAutoInstrumentations()],
   resource: new Resource({
     [SemanticResourceAttributes.SERVICE_NAME]: serviceName
-  })
+  }),
+  instrumentations: [
+    new HttpInstrumentation(),
+    new ExpressInstrumentation({
+      // you can add request/response hooks here to control span attributes/names
+    }),
+    new PgInstrumentation(),
+    new SequelizeInstrumentation()
+  ]
 });
 
 sdk.start()
-  .then(() => console.log(`OTEL SDK started (service=${serviceName}, endpoint=${tracesEndpoint || '<default>'})`))
+  .then(() => console.log(`OTEL SDK started (explicit instrumentations) service=${serviceName} endpoint=${tracesEndpoint || '<default>'}`))
   .catch((err) => console.error('Failed to start OTEL SDK', err));
 
 // graceful shutdown
