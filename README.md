@@ -61,3 +61,21 @@ Notes
 
 - If you already use Kubernetes auto-injection (e.g., you inject an OTEL sidecar or use a node auto-instrumentation injector), don't enable the built-in OTEL image to avoid double-instrumentation.
 - The `otel-bootstrap.js` file prints the resolved endpoint and service name on startup for easy debugging.
+
+Re-enabling in-process OpenTelemetry in the OTEL image
+
+If you want the OTEL image to include the in-process OpenTelemetry Node SDK and exporters, add the desired @opentelemetry/* packages back into `src/package.json` and pin exact published versions. Example (recommended minimal set):
+
+- `@opentelemetry/sdk-node`: 0.203.0
+- `@opentelemetry/instrumentation-http`: 0.203.0
+- `@opentelemetry/instrumentation-express`: 0.52.0
+- `@opentelemetry/instrumentation-runtime-node`: 0.17.1
+- `@opentelemetry/exporter-trace-otlp-http`: 0.203.0
+- `@opentelemetry/exporter-prometheus`: 0.203.0
+
+After editing `src/package.json` run a rebuild of the OTEL image:
+
+1) cd to the repo root
+2) docker build -f Dockerfile.otel -t nodejs-docker-demo-otel:latest .
+
+If npm install fails in the Docker build step, check the exact published package versions on the npm registry and pin them (replace the example versions above). See conversation logs for troubleshooting tips.

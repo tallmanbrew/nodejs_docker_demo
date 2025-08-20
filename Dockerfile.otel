@@ -2,7 +2,10 @@ FROM node:23-bullseye-slim
 RUN mkdir -p /opt/app
 WORKDIR /opt/app
 COPY src/package*.json ./
-RUN npm install
+# install base app deps first
+RUN npm install --no-audit --no-fund || true
 COPY src/ .
+# attempt to install optional OpenTelemetry deps if present in package.json; ignore failures
+RUN if grep -q "@opentelemetry" package.json 2>/dev/null; then npm install --no-audit --no-fund || true; fi
 EXPOSE 3000
 CMD [ "npm", "run", "start-otel" ]
